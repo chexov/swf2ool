@@ -1,0 +1,49 @@
+<html>
+<head>
+</head>
+<body>
+    <script>
+      window.fbAsyncInit = function() {
+        FB.init({
+          appId      : "823994074319982",
+          xfbml      : true,
+          version    : "v2.1"
+        });
+      };
+
+
+      var gp;
+
+      (function(d, s, id){
+         var js, fjs = d.getElementsByTagName(s)[0];
+         if (d.getElementById(id)) {return;}
+         js = d.createElement(s); js.id = id;
+         js.src = "//connect.facebook.net/en_US/sdk.js";
+         fjs.parentNode.insertBefore(js, fjs);
+       }(document, 'script', 'facebook-jssdk'));
+
+
+        var data = {};
+        var auth = function() {
+            FB.login(function(response){
+                if (response.status === 'connected') {
+                    FB.api('/me', 'get', {}, function(response) {
+                        data.facebookId = response.id;
+                        data.firstname = response.first_name;
+                        data.lastname = response.last_name;
+                        navigator.geolocation.getCurrentPosition(function(position) {
+                            data.location = position.coords.latitude + "," + position.coords.longitude;
+
+                            location.href = "/static/about.swf?facebookId=" + data.facebookid +
+                                            "&firstname=" + data.firstname +
+                                            "&lastname=" + data.lastname +
+                                            "&location=" + data.location;
+                        });
+                    });
+                }
+            });
+        }
+    </script>
+<h1 onclick="javascript: auth();">click me</h1>
+</body>
+</html>
