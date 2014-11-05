@@ -5,13 +5,15 @@ import shutil
 import uuid
 import subprocess
 import urllib2
+import json
 
 
 from flask import Flask
 from flask import render_template
 from flask import request
 from flask import send_file
-from flask import abort
+from flask import abort, redirect, url_for
+
 
 app = Flask(__name__)
 
@@ -21,8 +23,14 @@ def streamdir(streamid):
 
 def hasFrames(streamid):
     sdir = streamdir(streamid)
+    if (not os.path.isdir(sdir)):
+        return 0
     return len(filter(lambda f: f.endswith('.png'), os.listdir(sdir)))
 
+
+def submit_task(sid, url):
+    open ("tasks/"+sid, "w").write(json.dumps(dict(sid=sid, url=url)))
+    return True
 
 @app.route("/crossdomain.xml")
 def cdxml():
@@ -56,6 +64,15 @@ def sendstaticvideo(streamid):
     return send_file(streamdir(streamid) + "out.mp4")
 
 
+@app.route('/api/hasvideo/<sid>/mp4')
+def hasvideo(sid):
+    f = streamdir(sid) + "out.mp4"
+    if (os.path.isfile(f)):
+        return json.dumps(dict(sid=sid, url="/cdn/"+sid+"/mp4"))
+    else:
+        return json.dumps(dict(sid=sid, progress=hasFrames(sid)))
+
+
 @app.route("/api/checkandrender/<streamid>/<totalFrames>")
 def check_and_render(streamid, totalFrames):
     sdir=streamdir(streamid)
@@ -64,9 +81,10 @@ def check_and_render(streamid, totalFrames):
     if (hf == totalFrames):
         print "THEEND for " + streamid
 
-        cmd = "../ffmpeg -framerate 30 -i img%03d.png -c:v libx264 -pix_fmt yuv420p out.mp4"
+        cmd = "../ffmpeg -tune zerolatency -preset ultrafast -framerate 30 -i img%03d.png -c:v libx264 -pix_fmt yuv420p tmp.out.mp4"
         print cmd
         subprocess.call(cmd, cwd=streamid, shell=True)
+        shutil.move(sdir + "tmp.out.mp4", sdir + "out.mp4")
         return True
     else:
         return False
@@ -81,15 +99,32 @@ def proxy(url):
     return send_file(r, mimetype=r.headers.get('content-type'))
 
 
+@app.route("/video/<streamid>")
+def vidos(streamid):
+    return render_template("vidos.html", streamid=streamid)
+
+
 @app.route("/render/<streamid>")
 def start_render(streamid):
     url = "/Ssswf.swf?posturl=/upload/" + streamid
     url += "&swf=about.swf&frames=364"
     url += ''.join(["&" + arg + "=" + request.args[arg] for arg in request.args.keys()])
+    submit_task(streamid, url)
 
-    #TODO: open flash player
-    return '<html><body><a href="{0}">ssswf</a></body></html>'.format("/static"+ url)
+    return redirect('/video/' + streamid)
+    #return '<html><body><a href="{0}">ssswf</a></body></html>'.format("/static"+ url)
 
+@app.route("/engine")
+def engine():
+    tasks = []
+    for t in os.listdir("tasks"):
+        tf = "tasks/" +t
+        if (not os.path.isfile(tf)):
+            continue
+        print(tf)
+        tasks.append(open(tf).read())
+    print tasks
+    return render_template("engine.html", tasks=tasks)
 
 @app.route("/")
 def collect_data():
