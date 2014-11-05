@@ -3,15 +3,22 @@
 import os
 import shutil
 import uuid
+import subprocess
+import urllib2
+
 
 from flask import Flask
 from flask import render_template
 from flask import request
+from flask import send_file
+
 app = Flask(__name__)
+
 
 @app.route("/crossdomain.xml")
 def cdxml():
     return app.send_static_file('crossdomain.xml')
+
 
 @app.route("/upload/<streamid>", methods=["POST"])
 def savepng(streamid):
@@ -22,17 +29,28 @@ def savepng(streamid):
     if (not os.path.isdir(streamdir)):
         os.mkdir(streamdir)
 
-    framesHas = len(filter(lambda f: f.endswith('.png'), os.listdir(streamid + '/')))
-
     outfn = (streamid + "/img%0" + str(len(totalFrames)) + "d") % (frame,) + ".png"
     with open(outfn, "a") as png:
         png.write(request.data)
     print("=== got frame {0} from {1}. has {2}".format(frame, totalFrames, framesHas))
 
+    framesHas = len(filter(lambda f: f.endswith('.png'), os.listdir(streamid + '/')))
     if (totalFrames == framesHas):
         print "THEEND for " + streamid
 
+        cmd = "ffmpeg -framerate 30 -i img%03d.png -c:v libx264 -pix_fmt yuv420p out.mp4"
+        subprocess.call(cmd, cwd=streamid, shell=True)
+
     return 'ok'
+
+
+@app.route("/proxy/<path:url>")
+def proxy(url):
+    url += '?' + '&'.join([arg + "=" + request.args[arg] for arg in request.args.keys()])
+    print url
+
+    r = urllib2.urlopen(url)
+    return send_file(r, mimetype=r.headers.get('content-type'))
 
 @app.route("/render/<streamid>")
 def start_render(streamid):
@@ -47,7 +65,8 @@ def start_render(streamid):
 
 
     #TODO: open flash player
-    return url
+    return "file:///" + os.path.realpath(os.path.curdir) + "/static" + url
+
 
 @app.route("/")
 def collect_data():
