@@ -81,7 +81,7 @@ def check_and_render(streamid, totalFrames):
     if (hf == totalFrames):
         print "THEEND for " + streamid
 
-        cmd = "../ffmpeg -tune zerolatency -preset ultrafast -framerate 30 -i img%03d.png -c:v libx264 -pix_fmt yuv420p tmp.out.mp4"
+        cmd = "../ffmpeg -tune zerolatency -preset ultrafast -framerate 30 -i img%03d.png -c:v libx264 -pix_fmt yuv420p -y tmp.out.mp4"
         print cmd
         subprocess.call(cmd, cwd=streamid, shell=True)
         shutil.move(sdir + "tmp.out.mp4", sdir + "out.mp4")
