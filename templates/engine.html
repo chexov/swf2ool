@@ -14,6 +14,10 @@ var TASKS = {};
 var engineEl = document.querySelector("#engine");
 var lastcheckedEl = document.querySelector(".lastchecked");
 
+Notification.requestPermission( function(status) {
+    var n = new Notification("Hello my new new CPU", {body: "Do not close me or I hunt you down and format your drive"}); // this also shows the notification
+});
+
 var checkfornewtasks = function(callback){
 
     new SimpleAjax().loadJson('/api/engine/tasks', function(data){
@@ -58,6 +62,7 @@ var checkvideo = function(sid, callback){
 setInterval(function(){
     checkfornewtasks(function(task){
         console.log("got new task:", task);
+        new Notification("New task", {body: task.sid});
         var ifr = document.createElement('iframe');
         ifr.src = "/static" + task.url;
         engineEl.appendChild(ifr);
