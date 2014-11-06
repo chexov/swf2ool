@@ -126,7 +126,7 @@ def apitasks():
         task = open(tf).read()
         sid = json.loads(task).get("sid")
         if (os.path.isfile(streamdir(sid) + "out.mp4")):
-            shutil.move(tf, "tasks.done/" + sid)
+            shutil.move(tf, streamdir(sid) + "task.json")
         else:
             tasks.append(json.loads(task))
     return json.dumps(tasks)
