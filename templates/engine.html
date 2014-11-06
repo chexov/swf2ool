@@ -1,20 +1,75 @@
 <html>
-    <body>
 
+    <head>
+        <script src="/static/lib.js"></script>
+    </head>
+
+    <body>
+        <div class="lastchecked"></div>
         <div id="engine"></div>
 
-        <script>
-            var tasks = {{ tasks|safe }};
-            var engineEl = document.querySelector("#engine");
+<script>
 
-            tasks.forEach(function(task){
-                task = JSON.parse(task);
-                console.log(task);
-                var ifr = document.createElement('iframe');
-                ifr.src = "/static" + task.url;
-                engineEl.appendChild(ifr);
-            });
+var TASKS = {};
+var engineEl = document.querySelector("#engine");
+var lastcheckedEl = document.querySelector(".lastchecked");
 
-        </script>
+var checkfornewtasks = function(callback){
+
+    new SimpleAjax().loadJson('/api/engine/tasks', function(data){
+        //console.log("engine tasks", data);
+        if (!!data){
+            for (var i=0; i<data.length; i++){
+                var t = data[i];
+                if (!(t.sid in TASKS) ){
+                    TASKS[t.sid] = t;
+                    callback(t);
+                }
+            }
+        } else {
+            console.log(data);
+        }
+        lastcheckedEl.innerText = new Date() + " ";
+    }, function(e){
+        console.error(e);
+        lastcheckedEl.innerText = new Date() + " " + e.statusText;
+    });
+};
+
+var checkvideo = function(sid, callback){
+    new SimpleAjax().loadJson('/api/hasvideo/' + sid + '/mp4', function(data){
+        if (!!data && !!data.url){
+            callback(data);
+        } else {
+            console.log(data);
+            setTimeout(function(){
+                checkvideo(sid, callback);
+            }, 1000);
+        }
+    }, function(e){
+        setTimeout(function(){
+            checkvideo(sid, callback);
+        }, 1000);
+        console.error(e);
+    });
+}
+
+
+setInterval(function(){
+    checkfornewtasks(function(task){
+        console.log("got new task:", task);
+        var ifr = document.createElement('iframe');
+        ifr.src = "/static" + task.url;
+        engineEl.appendChild(ifr);
+
+        checkvideo(task.sid, function(){
+            delete TASKS[task.sid];
+            ifr.remove();
+        });
+    });
+}, 1000);
+
+</script>
+
     </body>
 </html>

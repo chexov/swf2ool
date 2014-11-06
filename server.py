@@ -114,8 +114,9 @@ def start_render(streamid):
     return redirect('/video/' + streamid)
     #return '<html><body><a href="{0}">ssswf</a></body></html>'.format("/static"+ url)
 
-@app.route("/engine")
-def engine():
+
+@app.route("/api/engine/tasks")
+def apitasks():
     tasks = []
     for t in os.listdir("tasks"):
         tf = "tasks/" +t
@@ -127,9 +128,13 @@ def engine():
         if (os.path.isfile(streamdir(sid) + "out.mp4")):
             shutil.move(tf, "tasks.done/" + sid)
         else:
-            tasks.append(task)
-    print tasks
-    return render_template("engine.html", tasks=tasks)
+            tasks.append(json.loads(task))
+    return json.dumps(tasks)
+
+
+@app.route("/engine")
+def engine():
+    return render_template("engine.html")
 
 @app.route("/")
 def collect_data():
