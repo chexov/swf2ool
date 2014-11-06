@@ -1,0 +1,79 @@
+<html>
+    <body style="background-color: #dddddd">
+
+    <video class="video" autoplay controls>
+    </video>
+        <div class="progress">Loading...</div>
+
+
+<script>
+var SimpleAjax = function(){
+}
+
+SimpleAjax.prototype.load = function (url, callback, error) {
+    var http = new XMLHttpRequest();
+    http.open("GET", url, true);
+    http.onreadystatechange = function () {
+        if (http.readyState == 4) {
+            if (http.status == 200) {
+                var result = "";
+                if (http.responseText)
+                    result = http.responseText;
+                if (callback)
+                    callback(result);
+            } else {
+                if (console)
+                    console.log(http.status);
+                if (error) {
+                    error(http);
+                }
+            }
+        }
+    };
+    http.send(null);
+    return http;
+};
+
+SimpleAjax.prototype.loadJson = function (url, callback, error) {
+    return this.load(url, function (result, httpStatus) {
+        if (callback) {
+            var resultObj = result;
+            if (result) {
+                resultObj = JSON.parse ? JSON.parse(result) : JSON.decode(result)
+            }
+            ;
+            callback(resultObj, httpStatus);
+        }
+        ;
+    }, error);
+};
+
+var streamid="{{ streamid }}";
+var tid = null;
+var videoEl = document.querySelector(".video");
+var progressEl = document.querySelector(".progress");
+
+var checkvideo = function(){
+    new SimpleAjax().loadJson('/api/hasvideo/' + streamid + '/mp4', function(data){
+        if (!!data && !!data.url){
+            videoEl.src = data.url;
+            videoEl.play();
+            clearTimeout(tid);
+        } else {
+            if ("progress" in data){
+                progressEl.innerText = data.progress; // + "%";
+            }
+            setTimeout(checkvideo, 1000);
+            console.log(data);
+        }
+    }, function(e){
+        setTimeout(checkvideo, 1000);
+        console.error(e);
+    });
+}
+
+checkvideo();
+
+</script>
+    </body>
+</html>

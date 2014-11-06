@@ -1,0 +1,20 @@
+<html>
+    <body>
+
+        <div id="engine"></div>
+
+        <script>
+            var tasks = {{ tasks|safe }};
+            var engineEl = document.querySelector("#engine");
+
+            tasks.forEach(function(task){
+                task = JSON.parse(task);
+                console.log(task);
+                var ifr = document.createElement('iframe');
+                ifr.src = "/static" + task.url;
+                engineEl.appendChild(ifr);
+            });
+
+        </script>
+    </body>
+</html>

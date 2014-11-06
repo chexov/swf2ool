@@ -122,7 +122,12 @@ def engine():
         if (not os.path.isfile(tf)):
             continue
         print(tf)
-        tasks.append(open(tf).read())
+        task = open(tf).read()
+        sid = json.loads(task).get("sid")
+        if (os.path.isfile(streamdir(sid) + "out.mp4")):
+            shutil.move(tf, "tasks.done/" + sid)
+        else:
+            tasks.append(task)
     print tasks
     return render_template("engine.html", tasks=tasks)
 
